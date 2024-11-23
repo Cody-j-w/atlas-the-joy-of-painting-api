@@ -35,8 +35,8 @@ colorInterface.on('line', (line) => {
     if (index > 0) {
         const paintingObject = {};
         const colorsHexes = line.split(/[\[\]]/);
-        paintingObject.colors = colorsHexes[1];
-        paintingObject.color_hex = colorsHexes[3];
+        paintingObject.colors = colorsHexes[1].split(', ');
+        paintingObject.color_hex = colorsHexes[3].split(', ');
         const extracted = colorsHexes[0]+colorsHexes[4];
         const otherInfo = extracted.split(',');
         let title = transformTitle(otherInfo[infoIndex['painting_title']]);
@@ -64,15 +64,25 @@ colorInterface.on('close', () => {
     episodeInterface.on('line', (line) => {
             const extract = line.split(/[\(\)]/);
             let transformedTitle = transformTitle(extract[0]);
-            let extractedDate = extract[1];
-            episodeTitles.push(transformedTitle);
+            let extractedDate = transformDate(extract[1]);
+            episodeTitles.push({
+                title: transformedTitle,
+                date: extractedDate.date,
+                month: extractedDate.month});
+            
     });
     
     episodeInterface.on('close', () => { 
-        let paintingTitles = [];
         for (painting of normalized) {
-            paintingTitles.push(painting.painting_title);
+            for (episode of episodeTitles) {
+                if (episode.title === painting.painting_title) {
+                    painting.date = episode.date;
+                    painting.month = episode.month;
+                }
+            }
+            console.log(painting);
         }
+        
 
         const subjectInterface = readline.createInterface({
             input: fs.createReadStream('The Joy Of Painiting - Subject Matter'),
@@ -85,13 +95,12 @@ colorInterface.on('close', () => {
         subjectInterface.on('line', (line) => {
             const extract = line.split(',');
             if (index == 0) {
-                for (let i = 2; i < extract.length; i++) {
-                    const sql = `INSERT INTO subjects (subject_name) VALUES ('${extract[i]}')`
-                    connection.query(sql, (err) => {
-                        if (err) throw err;
-                        console.log('Value inserted: '+extract[i]);
-                    })
-                }
+                // for (let i = 2; i < extract.length; i++) {
+                //     const sql = `INSERT INTO subjects (subject_name) VALUES ('${extract[i]}')`
+                //     connection.query(sql, (err) => {
+                //         if (err) throw err;
+                //     })
+                // }
             }
             index += 1;
         });
@@ -152,4 +161,33 @@ function transformTitle(title) {
         transformedTitle = transformedTitle.slice(2);
     }
     return transformedTitle;
+}
+
+function transformDate(date) {
+    const months = {
+        'January': 1,
+        'February': 2,
+        'March': 3,
+        'April': 4,
+        'May': 5,
+        'June': 6,
+        'July': 7,
+        'August': 8,
+        'September': 9,
+        'October': 10,
+        'November': 11,
+        'December': 12
+        };
+    let transformedDate = date.replace(', ', ' ');
+    const testDate = transformedDate.split(' ');
+    for (const [key, value] of Object.entries(months)) {
+        transformedDate = transformedDate.replace(key, value);
+    }
+    const segmentedDate = transformedDate.split(' ');
+    transformedDate = `${segmentedDate[2]}-${segmentedDate[0]}-${segmentedDate[1]}`;
+    const monthAndDate = {
+        date: transformedDate,
+        month: testDate[0]
+    };
+    return monthAndDate;
 }
