@@ -12,21 +12,17 @@ CREATE TABLE paintings (
     id INT NOT NULL AUTO_INCREMENT,
     painting_name VARCHAR(255) DEFAULT NULL,
     image VARCHAR(255) DEFAULT NULL,
+    episode_number INT DEFAULT NULL,
+    season INT DEFAULT NULL,
+    video VARCHAR(255) DEFAULT NULL,
+    month_aired VARCHAR(255) DEFAULT NULL,
+    date DATE DEFAULT NULL,
     PRIMARY KEY (id)
 );
 DROP TABLE IF EXISTS subjects;
 CREATE TABLE subjects (
     id INT NOT NULL AUTO_INCREMENT,
     subject_name VARCHAR(255) DEFAULT NULL,
-    PRIMARY KEY (id)
-);
-DROP TABLE IF EXISTS episodes;
-CREATE TABLE episodes (
-    id INT NOT NULL AUTO_INCREMENT,
-    episode_number INT DEFAULT NULL,
-    season INT DEFAULT NULL,
-    video VARCHAR(255) DEFAULT NULL,
-    date DATE DEFAULT NULL,
     PRIMARY KEY (id)
 );
 DROP TABLE IF EXISTS painting_colors;
