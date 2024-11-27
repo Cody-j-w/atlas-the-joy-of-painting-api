@@ -10,7 +10,7 @@ const connection = mysql.createConnection({
     database: 'the_joy_of_painting'
 });
 
-
+connection.connect();
 
 let normalized = [];
 
@@ -80,7 +80,12 @@ colorInterface.on('close', () => {
                     painting.month = episode.month;
                 }
             }
-            console.log(painting);
+        }
+        for (let i = 0; i < normalized.length; i++){
+            if (normalized[i].painting_title !== episodeTitles[i].title) {
+                console.log(normalized[i].painting_title);
+                console.log(episodeTitles[i].title);
+            }
         }
         
 
@@ -95,19 +100,73 @@ colorInterface.on('close', () => {
         subjectInterface.on('line', (line) => {
             const extract = line.split(',');
             if (index == 0) {
-                // for (let i = 2; i < extract.length; i++) {
-                //     const sql = `INSERT INTO subjects (subject_name) VALUES ('${extract[i]}')`
-                //     connection.query(sql, (err) => {
-                //         if (err) throw err;
-                //     })
-                // }
+                for (let i = 2; i < extract.length; i++) {
+                    subjects.push(extract[i]);
+                    const sql = `INSERT INTO subjects (subject_name) VALUES ('${extract[i]}')`
+                    connection.query(sql, (err) => {
+                        if (err) throw err;
+                        
+                    })
+                }
+            } else {
+                let subjectList = [];
+                let painting = {title: transformTitle(extract[1])}
+                for (i = 2; i < extract.length; i++){
+                    if (extract[i] == 1) {
+                        subjectList.push(subjects[i-2]);
+                    }
+                }
+                painting.subjectList = subjectList;
+                subjectPaintings.push(painting);
+                for (const p of normalized) {
+                    for (const subject of subjectPaintings) {
+                        if (p.painting_title === subject.title) {
+                            p.subjectList = subject.subjectList;
+                        }
+                    }
+                }
             }
             index += 1;
         });
 
         subjectInterface.on('close', () => {
+            let idIndex = 1;
+            for (const p of normalized) {
+                console.log(p.subjectList);
+                const insertion = `INSERT INTO paintings (painting_name, image_src, episode_number, season, video, month_aired, date_aired, painting_index) VALUES ('${p.painting_title}', '${p.img_src}', '${p.episode}', '${p.season}', '${p.youtube_src}', '${p.month}', '${p.date}', '${p.painting_index}');`
+                connection.query(insertion, (err, results, fields) => {
+                    if (err) {
+                        throw err;
+                    };
+                    const paintingId = results.insertId;
+                    for (const color of p.colors) {
+                        const colorLookup = transformColors(color);
+                        const colorSetter = `SELECT id FROM colors WHERE color_name = '${colorLookup}'`;
+                        connection.query(colorSetter, (err, results, fields) => {
+                            console.log(results);
+                            const tableSetter = `INSERT INTO painting_colors (painting_id, color_id) VALUES (${paintingId}, ${results[0].id})`;
+                            connection.query(tableSetter, (err, results, fields) => {
+                                if (err) throw err;
+                                
+                            })
+                            
+                        })
+                    }
+                    for (const subject of p.subjectList) {
+                        const subjectSetter = `SELECT id FROM subjects WHERE subject_name = '${subject}'`;
+                        connection.query(subjectSetter, (err, results, fields) => {
+                            if (err) throw err;
+                            const subjectTableSetter = `INSERT INTO painting_subjects (painting_id, subject_id) VALUES (${paintingId}, ${results[0].id})`;
+                            connection.query(subjectTableSetter, (err, results, fields) => {
+                                if (err) throw err;
+                            })
+                            
+                        })
+                    }
+                });
+            }
             
-        })
+        });
     });
 });
 
@@ -138,6 +197,13 @@ function transformTitle(title) {
     transformedTitle = transformedTitle.replace('PLACE HOME', 'HOME PLACE');
     transformedTitle = transformedTitle.replace('MT.', 'MOUNT');
     transformedTitle = transformedTitle.replace('&', 'AND');
+    transformedTitle = transformedTitle.replace('SNOW FALL', 'SNOWFALL');
+    transformedTitle = transformedTitle.replace('SUNLIGHT', 'SUNSHINE');
+    transformedTitle = transformedTitle.replace('FOREST DOWN', 'FOREST DAWN');
+    transformedTitle = transformedTitle.replace('QUIET MOUNTAINS', 'QUIET MOUNTAIN');
+    transformedTitle = transformedTitle.replace(' WOOD SHAPE', '');
+    transformedTitle = transformedTitle.replace('PASTEL WINTER', 'WINTER IN PASTEL');
+    transformedTitle = transformedTitle.replace("'", "");
     if (transformedTitle.split(' ')[transformedTitle.split(' ').length - 1] == 'OVAL') {
         transformedTitle = transformedTitle.replace(' OVAL', '');
     }
@@ -146,7 +212,7 @@ function transformTitle(title) {
         transformedTitle = transformedTitle.replace('MOUNTAIN', 'MOUNTAINS');
     }
     if (transformedTitle.slice(-1) == "'") {
-        transformedTitle = transformedTitle.slice(-2);
+        transformedTitle = transformedTitle.slice(0, -1);
     }
     if (transformedTitle.substring(0, 4) == 'THE ') {
         transformedTitle = transformedTitle.slice(4);
@@ -190,4 +256,10 @@ function transformDate(date) {
         month: testDate[0]
     };
     return monthAndDate;
+}
+
+function transformColors(color) {
+    let transformedColor = color.slice(1, -1);
+    transformedColor = transformedColor.split('\\')[0];
+    return transformedColor;
 }
