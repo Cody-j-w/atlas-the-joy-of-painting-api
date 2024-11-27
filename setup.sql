@@ -11,12 +11,13 @@ DROP TABLE IF EXISTS paintings;
 CREATE TABLE paintings (
     id INT NOT NULL AUTO_INCREMENT,
     painting_name VARCHAR(255) DEFAULT NULL,
-    image VARCHAR(255) DEFAULT NULL,
+    image_src VARCHAR(255) DEFAULT NULL,
     episode_number INT DEFAULT NULL,
     season INT DEFAULT NULL,
     video VARCHAR(255) DEFAULT NULL,
     month_aired VARCHAR(255) DEFAULT NULL,
-    date DATE DEFAULT NULL,
+    date_aired DATE DEFAULT NULL,
+    painting_index INT DEFAULT NULL,
     PRIMARY KEY (id)
 );
 DROP TABLE IF EXISTS subjects;
