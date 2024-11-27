@@ -20,7 +20,6 @@ router.get('/', (req, res) => {
     const sid = 'ps.subject_id';
     let query = `SELECT p.id, p.painting_name FROM paintings p LEFT JOIN painting_colors pc ON (p.id = pc.painting_id) LEFT JOIN colors c on (pc.color_id = c.id) LEFT JOIN painting_subjects ps ON (p.id = ps.painting_id) LEFT JOIN subjects s on (ps.subject_id = s.id)`;
     let parameters = 0;
-    console.log(Object.keys(req.query));
     if (req.query.month) {
         parameters += 1;
         let month = req.query.month;
@@ -40,7 +39,7 @@ router.get('/', (req, res) => {
     }
     if (req.query.subject) {
         parameters += 1;
-        let subject = req.query.subject;
+        let subject = req.query.subject.toUpperCase();
         let querySubject;
         if (parameters > 1) {
             querySubject = ` AND s.subject_name = '${subject}'`;
@@ -63,9 +62,7 @@ router.get('/', (req, res) => {
         connection.query(finalQuery, (err, results) => {
             let data = {};
             for (const result of results) {
-                console.log(Object.keys(data));
                 if (!(Object.keys(data).includes(result.painting_name))) {
-                    console.log("New painting!");
                     data[result.painting_name] = {
                         title: result.painting_name,
                         image: result.image_src,
@@ -76,8 +73,6 @@ router.get('/', (req, res) => {
                         colors: [],
                         subjects: []
                     }
-                } else {
-                    console.log("This painting is already in the list");
                 }
                 if (!(data[result.painting_name].colors.includes(result.color_name))) {
                     data[result.painting_name].colors.push(result.color_name);
